@@ -11,8 +11,10 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.HttpLoggingInterceptor = void 0;
 const common_1 = require("@nestjs/common");
+const rxjs_1 = require("rxjs");
 const operators_1 = require("rxjs/operators");
 const logger_service_1 = require("../logger/logger.service");
+const app_error_1 = require("../exceptions/base/app.error");
 let HttpLoggingInterceptor = class HttpLoggingInterceptor {
     logger;
     constructor(logger) {
@@ -22,70 +24,41 @@ let HttpLoggingInterceptor = class HttpLoggingInterceptor {
         if (context.getType() !== "http") {
             return next.handle();
         }
-        const request = context.switchToHttp().getRequest();
-        const response = context.switchToHttp().getResponse();
+        const http = context.switchToHttp();
+        const request = http.getRequest();
+        const response = http.getResponse();
         const startTime = Date.now();
-        const finalUrl = request.originalUrl || request.url;
-        if (finalUrl?.includes("/metrics")) {
+        const url = request.originalUrl || request.url;
+        if (url?.includes("/metrics")) {
             return next.handle();
         }
-        return next.handle().pipe((0, operators_1.tap)({
-            next: (responseBody) => {
-                const payload = this.buildSuccessPayload(request, response, responseBody, startTime);
-                this.logByStatus(payload.status, request.method, finalUrl, payload);
-            },
-            error: (error) => {
-                const payload = this.buildErrorPayload(request, error, startTime);
-                this.logger.error(`HTTP ERROR ${request.method} ${finalUrl}`, error, payload);
-            },
+        return next.handle().pipe((0, operators_1.tap)(() => {
+            const duration = Date.now() - startTime;
+            const payload = this.buildBasePayload(request, response.statusCode, duration);
+            this.logByStatus(response.statusCode, request.method, url, payload);
+        }), (0, operators_1.catchError)((error) => {
+            const duration = Date.now() - startTime;
+            const status = error instanceof app_error_1.AppError
+                ? error.statusCode
+                : error?.status || 500;
+            const payload = {
+                ...this.buildBasePayload(request, status, duration),
+                errorCode: error instanceof app_error_1.AppError ? error.code : "UNKNOWN_ERROR",
+                errorMessage: error instanceof Error ? error.message : String(error),
+            };
+            this.logger.error(`HTTP ${request.method} ${url}`, undefined, payload);
+            return (0, rxjs_1.throwError)(() => error);
         }));
     }
-    buildSuccessPayload(request, response, responseBody, startTime) {
-        const duration = Date.now() - startTime;
-        const payload = {
-            method: request.method,
-            url: request.originalUrl || request.url,
-            status: response.statusCode,
-            duration,
-            ip: request.ip || request.socket?.remoteAddress,
-            userAgent: request.headers["user-agent"],
-            headers: this.filterSensitiveHeaders(request.headers),
-        };
-        if (request.query && Object.keys(request.query).length > 0) {
-            payload.query = request.query;
-        }
-        if (request.body && Object.keys(request.body).length > 0) {
-            payload.requestBody = request.body;
-        }
-        if (responseBody) {
-            payload.responseBody = responseBody;
-        }
-        return payload;
-    }
-    buildErrorPayload(request, error, startTime) {
-        const duration = Date.now() - startTime;
-        let statusCode = 500;
-        let message = "Internal Server Error";
-        if (error instanceof common_1.HttpException) {
-            statusCode = error.getStatus();
-            const response = error.getResponse();
-            message =
-                typeof response === "string"
-                    ? response
-                    : response?.message || error.message;
-        }
-        else if (error?.message) {
-            message = error.message;
-        }
+    buildBasePayload(request, status, duration) {
         return {
             method: request.method,
             url: request.originalUrl || request.url,
-            status: statusCode,
+            status,
             duration,
             ip: request.ip || request.socket?.remoteAddress,
             userAgent: request.headers["user-agent"],
             headers: this.filterSensitiveHeaders(request.headers),
-            errorMessage: message,
         };
     }
     logByStatus(status, method, url, payload) {
@@ -100,23 +73,17 @@ let HttpLoggingInterceptor = class HttpLoggingInterceptor {
         }
     }
     filterSensitiveHeaders(headers) {
-        const sensitive = [
+        const sensitive = new Set([
             "authorization",
             "cookie",
             "x-api-key",
             "x-auth-token",
             "set-cookie",
-        ];
-        const result = {};
-        for (const key in headers) {
-            if (sensitive.includes(key.toLowerCase())) {
-                result[key] = "[REDACTED]";
-            }
-            else {
-                result[key] = headers[key];
-            }
-        }
-        return result;
+        ]);
+        return Object.fromEntries(Object.entries(headers).map(([key, value]) => [
+            key,
+            sensitive.has(key.toLowerCase()) ? "[REDACTED]" : value,
+        ]));
     }
 };
 exports.HttpLoggingInterceptor = HttpLoggingInterceptor;

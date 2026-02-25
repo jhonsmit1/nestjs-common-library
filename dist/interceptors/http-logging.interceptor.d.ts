@@ -5,8 +5,7 @@ export declare class HttpLoggingInterceptor implements NestInterceptor {
     private readonly logger;
     constructor(logger: LoggerService);
     intercept(context: ExecutionContext, next: CallHandler): Observable<any>;
-    private buildSuccessPayload;
-    private buildErrorPayload;
+    private buildBasePayload;
     private logByStatus;
     private filterSensitiveHeaders;
 }
