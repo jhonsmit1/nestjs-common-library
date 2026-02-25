@@ -59,11 +59,7 @@ export class HttpLoggingInterceptor implements NestInterceptor {
                         error instanceof Error ? error.message : String(error),
                 };
 
-                this.logger.error(
-                    `HTTP ${request.method} ${url}`,
-                    undefined,
-                    payload
-                );
+                this.logByStatus(status, request.method, url, payload);
 
                 return throwError(() => error);
             })
