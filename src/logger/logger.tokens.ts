@@ -1,0 +1,2 @@
+export const LOGGER_OPTIONS = "LOGGER_OPTIONS";
+export const LOGGER_ADAPTER = "LOGGER_ADAPTER";
