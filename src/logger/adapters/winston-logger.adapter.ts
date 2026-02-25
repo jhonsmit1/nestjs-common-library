@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
-import winston from "winston";
+import * as winston from "winston";
 import LokiTransport from "winston-loki";
 import WinstonCloudWatch from "winston-cloudwatch";
 import { ILoggerAdapter } from "../interfaces/logger-adapter.interface";

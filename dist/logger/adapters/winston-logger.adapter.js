@@ -14,7 +14,7 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.WinstonLoggerAdapter = void 0;
 const common_1 = require("@nestjs/common");
-const winston_1 = require("winston");
+const winston = require("winston");
 const winston_loki_1 = require("winston-loki");
 const winston_cloudwatch_1 = require("winston-cloudwatch");
 const logger_tokens_1 = require("../logger.tokens");
@@ -27,8 +27,8 @@ let WinstonLoggerAdapter = class WinstonLoggerAdapter {
     }
     createLogger() {
         const transports = [
-            new winston_1.default.transports.Console({
-                format: winston_1.default.format.combine(winston_1.default.format.timestamp(), winston_1.default.format.json()),
+            new winston.transports.Console({
+                format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
             }),
         ];
         if (this.options.loki?.endpoint) {
@@ -52,9 +52,9 @@ let WinstonLoggerAdapter = class WinstonLoggerAdapter {
                 awsRegion: this.options.cloudwatch.region,
             }));
         }
-        return winston_1.default.createLogger({
+        return winston.createLogger({
             level: this.options.level || "info",
-            format: winston_1.default.format.combine(winston_1.default.format.timestamp(), winston_1.default.format.errors({ stack: true }), winston_1.default.format.json()),
+            format: winston.format.combine(winston.format.timestamp(), winston.format.errors({ stack: true }), winston.format.json()),
             transports,
         });
     }
