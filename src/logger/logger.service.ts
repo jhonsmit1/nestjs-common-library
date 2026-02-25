@@ -3,6 +3,7 @@ import { LOGGER_ADAPTER, LOGGER_OPTIONS } from "./logger.tokens";
 import { ILoggerAdapter } from "./interfaces/logger-adapter.interface";
 import { LoggerModuleOptions } from "./interfaces/logger-options.interface";
 import { LogLevel } from "./interfaces/log-level.type";
+import { getRequestId } from "../context/request-context";
 
 @Injectable()
 export class LoggerService {
@@ -14,11 +15,21 @@ export class LoggerService {
     private readonly options: LoggerModuleOptions
   ) {}
 
+  /**
+   * Enrich metadata with:
+   * - service info
+   * - environment
+   * - timestamp
+   * - requestId (if exists)
+   */
   private enrichMeta(meta?: any) {
+    const requestId = getRequestId();
+
     return {
       service: this.options.serviceName,
       environment: this.options.environment,
       timestamp: new Date().toISOString(),
+      ...(requestId && { requestId }),
       ...(meta || {}),
     };
   }
@@ -43,7 +54,7 @@ export class LoggerService {
     this.logger.verbose(message, this.enrichMeta(meta));
   }
 
-  error(message: string, trace?: any, meta?: any) {
+  error(message: string, trace?: string | Error, meta?: any) {
     this.logger.error(
       message,
       trace,

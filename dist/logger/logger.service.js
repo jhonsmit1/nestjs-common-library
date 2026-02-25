@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.LoggerService = void 0;
 const common_1 = require("@nestjs/common");
 const logger_tokens_1 = require("./logger.tokens");
+const request_context_1 = require("../context/request-context");
 let LoggerService = class LoggerService {
     logger;
     options;
@@ -23,10 +24,12 @@ let LoggerService = class LoggerService {
         this.options = options;
     }
     enrichMeta(meta) {
+        const requestId = (0, request_context_1.getRequestId)();
         return {
             service: this.options.serviceName,
             environment: this.options.environment,
             timestamp: new Date().toISOString(),
+            ...(requestId && { requestId }),
             ...(meta || {}),
         };
     }

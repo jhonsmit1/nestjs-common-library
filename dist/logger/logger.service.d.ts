@@ -11,5 +11,5 @@ export declare class LoggerService {
     warn(message: string, meta?: any): void;
     debug(message: string, meta?: any): void;
     verbose(message: string, meta?: any): void;
-    error(message: string, trace?: any, meta?: any): void;
+    error(message: string, trace?: string | Error, meta?: any): void;
 }
