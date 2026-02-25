@@ -16,6 +16,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
         const requestId = request.headers["x-request-id"];
 
+        //  AppError  (dominio)
         if (exception instanceof AppError) {
             return response.status(exception.statusCode).json({
                 code: exception.code,
@@ -25,6 +26,16 @@ export class GlobalExceptionFilter implements ExceptionFilter {
             });
         }
 
+        //  Detectar errores tipo Zod SIN importar zod
+        if (this.isValidationError(exception)) {
+            return response.status(400).json({
+                code: "VALIDATION_ERROR",
+                message: (exception as any).errors ?? (exception as any).issues,
+                requestId,
+            });
+        }
+
+        //  HttpException de Nest
         if (exception instanceof HttpException) {
             const status = exception.getStatus();
             const res = exception.getResponse();
@@ -36,6 +47,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
             });
         }
 
+        //  Fallback
         return response.status(500).json({
             code: "INTERNAL_SERVER_ERROR",
             message:
@@ -44,5 +56,17 @@ export class GlobalExceptionFilter implements ExceptionFilter {
                     : (exception as any)?.message,
             requestId,
         });
+    }
+
+    private isValidationError(exception: unknown): boolean {
+        if (!exception || typeof exception !== "object") return false;
+
+        const error = exception as any;
+
+        return (
+            error.name === "ZodError" ||
+            Array.isArray(error.errors) ||
+            Array.isArray(error.issues)
+        );
     }
 }

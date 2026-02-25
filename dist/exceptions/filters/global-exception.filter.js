@@ -23,6 +23,13 @@ let GlobalExceptionFilter = class GlobalExceptionFilter {
                 requestId,
             });
         }
+        if (this.isValidationError(exception)) {
+            return response.status(400).json({
+                code: "VALIDATION_ERROR",
+                message: exception.errors ?? exception.issues,
+                requestId,
+            });
+        }
         if (exception instanceof common_1.HttpException) {
             const status = exception.getStatus();
             const res = exception.getResponse();
@@ -39,6 +46,14 @@ let GlobalExceptionFilter = class GlobalExceptionFilter {
                 : exception?.message,
             requestId,
         });
+    }
+    isValidationError(exception) {
+        if (!exception || typeof exception !== "object")
+            return false;
+        const error = exception;
+        return (error.name === "ZodError" ||
+            Array.isArray(error.errors) ||
+            Array.isArray(error.issues));
     }
 };
 exports.GlobalExceptionFilter = GlobalExceptionFilter;
