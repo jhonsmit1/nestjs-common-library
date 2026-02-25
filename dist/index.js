@@ -18,4 +18,5 @@ __exportStar(require("./logger/logger.module"), exports);
 __exportStar(require("./logger/logger.service"), exports);
 __exportStar(require("./interceptors/http-logging.interceptor"), exports);
 __exportStar(require("./context/request-context"), exports);
+__exportStar(require("./context/request-context.middleware"), exports);
 //# sourceMappingURL=index.js.map
