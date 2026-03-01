@@ -5,6 +5,8 @@ export * from "./logger/interfaces/log-level.type";
 
 // 🌐 HTTP
 export * from "./interceptors/http-logging.interceptor";
+export * from "./interceptors/response.interceptor";
+
 
 // ❗ Exceptions
 export * from "./exceptions/base/app.error";

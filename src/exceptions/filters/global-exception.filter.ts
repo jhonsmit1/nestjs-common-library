@@ -14,47 +14,70 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         const response = ctx.getResponse<Response>();
         const request = ctx.getRequest<Request>();
 
-        const requestId = request.headers["x-request-id"];
+        const timestamp = new Date().toISOString();
+        const path = request.originalUrl || request.url;
 
-        //  AppError  (dominio)
+        // 🔹 AppError (tu error de dominio)
         if (exception instanceof AppError) {
             return response.status(exception.statusCode).json({
-                code: exception.code,
-                message: exception.message,
-                metadata: exception.metadata,
-                requestId,
+                data: null,
+                error: {
+                    statusCode: exception.statusCode,
+                    timestamp,
+                    path,
+                    message: exception.message,
+                },
+                success: false,
             });
         }
 
-        //  Detectar errores tipo Zod SIN importar zod
+        // 🔹 Zod-like validation error (sin importar zod)
         if (this.isValidationError(exception)) {
             return response.status(400).json({
-                code: "VALIDATION_ERROR",
-                message: (exception as any).errors ?? (exception as any).issues,
-                requestId,
+                data: null,
+                error: {
+                    statusCode: 400,
+                    timestamp,
+                    path,
+                    message: (exception as any).errors ?? (exception as any).issues,
+                },
+                success: false,
             });
         }
 
-        //  HttpException de Nest
+        // 🔹 HttpException de Nest
         if (exception instanceof HttpException) {
             const status = exception.getStatus();
             const res = exception.getResponse();
 
             return response.status(status).json({
-                code: "HTTP_EXCEPTION",
-                message: res,
-                requestId,
+                data: null,
+                error: {
+                    statusCode: status,
+                    timestamp,
+                    path,
+                    message:
+                        typeof res === "string"
+                            ? res
+                            : (res as any)?.message ?? res,
+                },
+                success: false,
             });
         }
 
-        //  Fallback
+        // 🔹 Fallback 500
         return response.status(500).json({
-            code: "INTERNAL_SERVER_ERROR",
-            message:
-                process.env.NODE_ENV === "production"
-                    ? "Internal Server Error"
-                    : (exception as any)?.message,
-            requestId,
+            data: null,
+            error: {
+                statusCode: 500,
+                timestamp,
+                path,
+                message:
+                    process.env.NODE_ENV === "production"
+                        ? "Internal Server Error"
+                        : (exception as any)?.message,
+            },
+            success: false,
         });
     }
 
