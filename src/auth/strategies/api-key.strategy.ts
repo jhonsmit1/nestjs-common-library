@@ -1,6 +1,6 @@
 import { AuthStrategy, AuthResult } from "../interfaces/auth-strategy.interface";
 import { AuthContext } from "../interfaces/auth-context.interface";
-import { UnauthorizedError } from "src/exceptions/http/http.errors";
+import { UnauthorizedError } from "../../exceptions/http/http.errors";
 
 export class ApiKeyStrategy implements AuthStrategy {
   name = "api-key";

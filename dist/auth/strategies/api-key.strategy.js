@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ApiKeyStrategy = void 0;
-const http_errors_1 = require("src/exceptions/http/http.errors");
+const http_errors_1 = require("../../exceptions/http/http.errors");
 class ApiKeyStrategy {
     validKeys;
     name = "api-key";

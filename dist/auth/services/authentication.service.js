@@ -15,7 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthenticationService = void 0;
 const common_1 = require("@nestjs/common");
 const auth_tokens_1 = require("../tokens/auth.tokens");
-const http_errors_1 = require("src/exceptions/http/http.errors");
+const http_errors_1 = require("../../exceptions/http/http.errors");
 let AuthenticationService = class AuthenticationService {
     strategies;
     constructor(strategies) {

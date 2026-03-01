@@ -2,7 +2,7 @@ import { Inject, Injectable } from "@nestjs/common";
 import { AUTH_STRATEGIES } from "../tokens/auth.tokens";
 import { AuthStrategy } from "../interfaces/auth-strategy.interface";
 import { AuthContext } from "../interfaces/auth-context.interface";
-import { UnauthorizedError } from "src/exceptions/http/http.errors";
+import { UnauthorizedError } from "../../exceptions/http/http.errors";
 
 @Injectable()
 export class AuthenticationService {
