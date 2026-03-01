@@ -24,4 +24,12 @@ __exportStar(require("./exceptions/http/http.errors"), exports);
 __exportStar(require("./exceptions/filters/global-exception.filter"), exports);
 __exportStar(require("./context/request-context"), exports);
 __exportStar(require("./context/request-context.middleware"), exports);
+__exportStar(require("./auth/guards/auth.guard"), exports);
+__exportStar(require("./auth/decorators/public.decorator"), exports);
+__exportStar(require("./auth/strategies/api-key.strategy"), exports);
+__exportStar(require("./auth/strategies/jwt.strategy"), exports);
+__exportStar(require("./auth/strategies/internal-service.strategy"), exports);
+__exportStar(require("./auth/auth.module"), exports);
+__exportStar(require("./auth/interfaces/auth-strategy.interface"), exports);
+__exportStar(require("./auth/services/authentication.service"), exports);
 //# sourceMappingURL=index.js.map

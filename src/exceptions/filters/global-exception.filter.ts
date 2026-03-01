@@ -17,7 +17,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         const timestamp = new Date().toISOString();
         const path = request.originalUrl || request.url;
 
-        // 🔹 AppError (tu error de dominio)
+        //  AppError (tu error de dominio)
         if (exception instanceof AppError) {
             return response.status(exception.statusCode).json({
                 data: null,
@@ -31,7 +31,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
             });
         }
 
-        // 🔹 Zod-like validation error (sin importar zod)
+        //  Zod-like validation error (sin importar zod)
         if (this.isValidationError(exception)) {
             return response.status(400).json({
                 data: null,
@@ -45,7 +45,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
             });
         }
 
-        // 🔹 HttpException de Nest
+        //  HttpException de Nest
         if (exception instanceof HttpException) {
             const status = exception.getStatus();
             const res = exception.getResponse();
@@ -65,7 +65,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
             });
         }
 
-        // 🔹 Fallback 500
+        //  Fallback 500
         return response.status(500).json({
             data: null,
             error: {
