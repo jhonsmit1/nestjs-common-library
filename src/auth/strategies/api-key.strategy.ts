@@ -20,7 +20,7 @@ export class ApiKeyStrategy implements AuthStrategy {
 
     return {
       service: "external-client",
-      metadata: { apiKey }
+      metadata: { apiKey },
     };
   }
 }

@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.JwtAuthStrategy = void 0;
-const http_errors_1 = require("../../exceptions/http/http.errors");
 const jwt = require("jsonwebtoken");
+const http_errors_1 = require("../../exceptions/http/http.errors");
 class JwtAuthStrategy {
     jwtSecret;
     name = "jwt";
@@ -19,7 +19,7 @@ class JwtAuthStrategy {
             return {
                 userId: payload.sub,
                 roles: payload.roles || [],
-                metadata: payload
+                metadata: payload,
             };
         }
         catch {

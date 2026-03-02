@@ -1,1 +1,1 @@
-export declare const AUTH_STRATEGIES = "AUTH_STRATEGIES";
+export declare const AUTH_STRATEGIES: unique symbol;

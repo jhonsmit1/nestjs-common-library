@@ -18,11 +18,11 @@ const auth_tokens_1 = require("../tokens/auth.tokens");
 const http_errors_1 = require("../../exceptions/http/http.errors");
 let AuthenticationService = class AuthenticationService {
     strategies;
-    constructor(strategies) {
+    constructor(strategies = []) {
         this.strategies = strategies;
     }
     async authenticate(context) {
-        const strategy = this.strategies.find(s => s.canHandle(context));
+        const strategy = this.strategies.find((s) => s.canHandle(context));
         if (!strategy) {
             throw new http_errors_1.UnauthorizedError("No valid authentication strategy found");
         }
@@ -32,6 +32,7 @@ let AuthenticationService = class AuthenticationService {
 exports.AuthenticationService = AuthenticationService;
 exports.AuthenticationService = AuthenticationService = __decorate([
     (0, common_1.Injectable)(),
+    __param(0, (0, common_1.Optional)()),
     __param(0, (0, common_1.Inject)(auth_tokens_1.AUTH_STRATEGIES)),
     __metadata("design:paramtypes", [Array])
 ], AuthenticationService);

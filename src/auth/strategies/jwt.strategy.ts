@@ -1,7 +1,7 @@
+import * as jwt from "jsonwebtoken";
 import { AuthStrategy, AuthResult } from "../interfaces/auth-strategy.interface";
 import { AuthContext } from "../interfaces/auth-context.interface";
 import { UnauthorizedError } from "../../exceptions/http/http.errors";
-import * as jwt from "jsonwebtoken";
 
 export class JwtAuthStrategy implements AuthStrategy {
   name = "jwt";
@@ -21,7 +21,7 @@ export class JwtAuthStrategy implements AuthStrategy {
       return {
         userId: payload.sub,
         roles: payload.roles || [],
-        metadata: payload
+        metadata: payload,
       };
     } catch {
       throw new UnauthorizedError("Invalid JWT token");

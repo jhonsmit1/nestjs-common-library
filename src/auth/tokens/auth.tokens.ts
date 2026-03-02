@@ -1,1 +1,1 @@
-export const AUTH_STRATEGIES = "AUTH_STRATEGIES";
+export const AUTH_STRATEGIES = Symbol("AUTH_STRATEGIES");

@@ -17,7 +17,7 @@ class InternalServiceStrategy {
             throw new http_errors_1.UnauthorizedError("Invalid internal service secret");
         }
         return {
-            service: "internal-service"
+            service: "internal-service",
         };
     }
 }

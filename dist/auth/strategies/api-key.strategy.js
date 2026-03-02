@@ -18,7 +18,7 @@ class ApiKeyStrategy {
         }
         return {
             service: "external-client",
-            metadata: { apiKey }
+            metadata: { apiKey },
         };
     }
 }

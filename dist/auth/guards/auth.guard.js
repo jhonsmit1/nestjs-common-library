@@ -14,6 +14,7 @@ const common_1 = require("@nestjs/common");
 const core_1 = require("@nestjs/core");
 const authentication_service_1 = require("../services/authentication.service");
 const public_decorator_1 = require("../decorators/public.decorator");
+const request_context_1 = require("../../context/request-context");
 let AuthGuard = class AuthGuard {
     authService;
     reflector;
@@ -28,7 +29,8 @@ let AuthGuard = class AuthGuard {
         const request = context.switchToHttp().getRequest();
         const authResult = await this.authService.authenticate({
             headers: request.headers,
-            ip: request.ip
+            ip: request.ip,
+            requestId: (0, request_context_1.getRequestId)(),
         });
         request.user = authResult;
         return true;
