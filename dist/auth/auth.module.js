@@ -12,15 +12,18 @@ const common_1 = require("@nestjs/common");
 const authentication_service_1 = require("./services/authentication.service");
 const auth_guard_1 = require("./guards/auth.guard");
 let AuthModule = AuthModule_1 = class AuthModule {
-    static register(strategies) {
+    static register(strategiesProvider) {
         return {
             module: AuthModule_1,
             providers: [
+                strategiesProvider,
                 authentication_service_1.AuthenticationService,
                 auth_guard_1.AuthGuard,
-                strategies,
             ],
-            exports: [auth_guard_1.AuthGuard],
+            exports: [
+                authentication_service_1.AuthenticationService,
+                auth_guard_1.AuthGuard,
+            ],
         };
     }
 };
