@@ -1,22 +1,29 @@
-import { DynamicModule, Module, Provider } from "@nestjs/common";
-import { AuthenticationService } from "./services/authentication.service";
+import { Module, Global } from "@nestjs/common";
 import { AuthGuard } from "./guards/auth.guard";
-import { AuthStrategy } from "./interfaces/auth-strategy.interface";
+import { ApiKeyStrategy } from "./strategies/api-key.strategy";
 
-@Module({})
-export class AuthModule {
-    static register(strategiesProvider: Provider<AuthStrategy[]>): DynamicModule {
-        return {
-            module: AuthModule,
-            providers: [
-                strategiesProvider,
-                AuthenticationService,
-                AuthGuard,
-            ],
-            exports: [
-                AuthenticationService,
-                AuthGuard,
-            ],
-        };
-    }
-}
+@Global()
+@Module({
+    providers: [
+
+        ApiKeyStrategy,
+
+        {
+            provide: "AUTH_STRATEGIES",
+            useFactory: (
+                api: ApiKeyStrategy,
+            ) => [api],
+            inject: [ApiKeyStrategy],
+        },
+        {
+            provide: AuthGuard,
+            useFactory: (
+                reflector,
+                strategies,
+            ) => new AuthGuard(reflector, strategies),
+            inject: ["Reflector", "AUTH_STRATEGIES"],
+        },
+    ],
+    exports: [AuthGuard,],
+})
+export class AuthModule { }
