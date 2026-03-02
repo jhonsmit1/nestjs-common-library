@@ -32,7 +32,6 @@ let AuthenticationService = class AuthenticationService {
 exports.AuthenticationService = AuthenticationService;
 exports.AuthenticationService = AuthenticationService = __decorate([
     (0, common_1.Injectable)(),
-    __param(0, (0, common_1.Optional)()),
     __param(0, (0, common_1.Inject)(auth_tokens_1.AUTH_STRATEGIES)),
     __metadata("design:paramtypes", [Array])
 ], AuthenticationService);
