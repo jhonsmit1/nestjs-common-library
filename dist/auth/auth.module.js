@@ -14,6 +14,7 @@ const authentication_service_1 = require("./services/authentication.service");
 const auth_guard_1 = require("./guards/auth.guard");
 const auth_tokens_1 = require("./tokens/auth.tokens");
 const api_key_strategy_1 = require("./strategies/api-key.strategy");
+const cognito_strategy_1 = require("./strategies/cognito.strategy");
 let AuthModule = AuthModule_1 = class AuthModule {
     static registerAsync(options) {
         return {
@@ -21,14 +22,26 @@ let AuthModule = AuthModule_1 = class AuthModule {
             providers: [
                 {
                     provide: auth_tokens_1.API_KEY_OPTIONS,
-                    useFactory: options.useFactory,
+                    useFactory: async (...args) => {
+                        const config = await options.useFactory(...args);
+                        return config.apiKey ?? { validKeys: [] };
+                    },
+                    inject: options.inject || [],
+                },
+                {
+                    provide: auth_tokens_1.COGNITO_OPTIONS,
+                    useFactory: async (...args) => {
+                        const config = await options.useFactory(...args);
+                        return config.cognito ?? { allowedUserPoolIds: [] };
+                    },
                     inject: options.inject || [],
                 },
                 api_key_strategy_1.ApiKeyStrategy,
+                cognito_strategy_1.CognitoStrategy,
                 {
                     provide: auth_tokens_1.AUTH_STRATEGIES,
-                    useFactory: (apiKeyStrategy) => [apiKeyStrategy],
-                    inject: [api_key_strategy_1.ApiKeyStrategy],
+                    useFactory: (apiKeyStrategy, cognitoStrategy) => [apiKeyStrategy, cognitoStrategy],
+                    inject: [api_key_strategy_1.ApiKeyStrategy, cognito_strategy_1.CognitoStrategy],
                 },
                 authentication_service_1.AuthenticationService,
                 {
