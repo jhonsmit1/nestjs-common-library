@@ -15,7 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.CognitoStrategy = void 0;
 const common_1 = require("@nestjs/common");
 const jwt = require("jsonwebtoken");
-const jwk_to_pem_1 = require("jwk-to-pem");
+const jwkToPem = require("jwk-to-pem");
 const http_errors_1 = require("../../exceptions/http/http.errors");
 const auth_tokens_1 = require("../tokens/auth.tokens");
 const jwksCache = new Map();
@@ -61,7 +61,7 @@ let CognitoStrategy = class CognitoStrategy {
         if (!jwk) {
             throw new http_errors_1.UnauthorizedError("JWK not found");
         }
-        const pem = (0, jwk_to_pem_1.default)(jwk);
+        const pem = jwkToPem(jwk);
         try {
             jwt.verify(token, pem, {
                 algorithms: ["RS256"],

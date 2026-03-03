@@ -1,8 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 import * as jwt from "jsonwebtoken";
 import { JwtHeader } from "jsonwebtoken";
-import jwkToPem from "jwk-to-pem";
-
+import * as jwkToPem from "jwk-to-pem";
 import { AuthStrategy, AuthResult } from "../interfaces/auth-strategy.interface";
 import { AuthContext } from "../interfaces/auth-context.interface";
 import { UnauthorizedError } from "../../exceptions/http/http.errors";
