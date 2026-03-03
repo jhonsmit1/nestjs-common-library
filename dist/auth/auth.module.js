@@ -17,38 +17,58 @@ const api_key_strategy_1 = require("./strategies/api-key.strategy");
 const cognito_strategy_1 = require("./strategies/cognito.strategy");
 let AuthModule = AuthModule_1 = class AuthModule {
     static registerAsync(options) {
+        const asyncOptionsProvider = {
+            provide: "AUTH_MODULE_OPTIONS",
+            useFactory: options.useFactory,
+            inject: options.inject || [],
+        };
+        const providers = [
+            asyncOptionsProvider,
+            authentication_service_1.AuthenticationService,
+            {
+                provide: core_1.APP_GUARD,
+                useClass: auth_guard_1.AuthGuard,
+            },
+        ];
+        const strategyProviders = [];
+        strategyProviders.push({
+            provide: auth_tokens_1.API_KEY_OPTIONS,
+            useFactory: async (opts) => opts.apiKey,
+            inject: ["AUTH_MODULE_OPTIONS"],
+        });
+        strategyProviders.push({
+            provide: api_key_strategy_1.ApiKeyStrategy,
+            useFactory: async (opts) => {
+                if (!opts.apiKey)
+                    return null;
+                return new api_key_strategy_1.ApiKeyStrategy(opts.apiKey);
+            },
+            inject: ["AUTH_MODULE_OPTIONS"],
+        });
+        strategyProviders.push({
+            provide: auth_tokens_1.COGNITO_OPTIONS,
+            useFactory: async (opts) => opts.cognito,
+            inject: ["AUTH_MODULE_OPTIONS"],
+        });
+        strategyProviders.push({
+            provide: cognito_strategy_1.CognitoStrategy,
+            useFactory: async (opts) => {
+                if (!opts.cognito)
+                    return null;
+                return new cognito_strategy_1.CognitoStrategy(opts.cognito);
+            },
+            inject: ["AUTH_MODULE_OPTIONS"],
+        });
+        strategyProviders.push({
+            provide: auth_tokens_1.AUTH_STRATEGIES,
+            useFactory: (apiKeyStrategy, cognitoStrategy) => {
+                return [apiKeyStrategy, cognitoStrategy].filter(Boolean);
+            },
+            inject: [api_key_strategy_1.ApiKeyStrategy, cognito_strategy_1.CognitoStrategy],
+        });
         return {
             module: AuthModule_1,
-            providers: [
-                {
-                    provide: auth_tokens_1.API_KEY_OPTIONS,
-                    useFactory: async (...args) => {
-                        const config = await options.useFactory(...args);
-                        return config.apiKey ?? { validKeys: [] };
-                    },
-                    inject: options.inject || [],
-                },
-                {
-                    provide: auth_tokens_1.COGNITO_OPTIONS,
-                    useFactory: async (...args) => {
-                        const config = await options.useFactory(...args);
-                        return config.cognito ?? { allowedUserPoolIds: [] };
-                    },
-                    inject: options.inject || [],
-                },
-                api_key_strategy_1.ApiKeyStrategy,
-                cognito_strategy_1.CognitoStrategy,
-                {
-                    provide: auth_tokens_1.AUTH_STRATEGIES,
-                    useFactory: (apiKeyStrategy, cognitoStrategy) => [apiKeyStrategy, cognitoStrategy],
-                    inject: [api_key_strategy_1.ApiKeyStrategy, cognito_strategy_1.CognitoStrategy],
-                },
-                authentication_service_1.AuthenticationService,
-                {
-                    provide: core_1.APP_GUARD,
-                    useClass: auth_guard_1.AuthGuard,
-                },
-            ],
+            providers: [...providers, ...strategyProviders],
             exports: [authentication_service_1.AuthenticationService],
         };
     }
