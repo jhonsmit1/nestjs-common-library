@@ -1,9 +1,10 @@
 import { AuthStrategy, AuthResult } from "../interfaces/auth-strategy.interface";
 import { AuthContext } from "../interfaces/auth-context.interface";
+import { ApiKeyOptions } from "../interfaces/api-key-options.interface";
 export declare class ApiKeyStrategy implements AuthStrategy {
-    private readonly validKeys;
+    private readonly options;
     name: string;
-    constructor(validKeys: string[]);
+    constructor(options: ApiKeyOptions);
     canHandle(context: AuthContext): boolean;
     validate(context: AuthContext): Promise<AuthResult>;
 }

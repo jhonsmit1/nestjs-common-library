@@ -27,7 +27,6 @@ __exportStar(require("./context/request-context.middleware"), exports);
 __exportStar(require("./auth/auth.module"), exports);
 __exportStar(require("./auth/guards/auth.guard"), exports);
 __exportStar(require("./auth/decorators/public.decorator"), exports);
-__exportStar(require("./auth/decorators/current-user.decorator"), exports);
 __exportStar(require("./auth/tokens/auth.tokens"), exports);
 __exportStar(require("./auth/interfaces/auth-context.interface"), exports);
 __exportStar(require("./auth/interfaces/auth-strategy.interface"), exports);

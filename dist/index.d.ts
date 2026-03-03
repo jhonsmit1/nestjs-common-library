@@ -11,7 +11,6 @@ export * from "./context/request-context.middleware";
 export * from "./auth/auth.module";
 export * from "./auth/guards/auth.guard";
 export * from "./auth/decorators/public.decorator";
-export * from "./auth/decorators/current-user.decorator";
 export * from "./auth/tokens/auth.tokens";
 export * from "./auth/interfaces/auth-context.interface";
 export * from "./auth/interfaces/auth-strategy.interface";
