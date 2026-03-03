@@ -14,10 +14,10 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CognitoStrategy = void 0;
 const common_1 = require("@nestjs/common");
+const jwt = require("jsonwebtoken");
+const jwk_to_pem_1 = require("jwk-to-pem");
 const http_errors_1 = require("../../exceptions/http/http.errors");
 const auth_tokens_1 = require("../tokens/auth.tokens");
-const jsonwebtoken_1 = require("jsonwebtoken");
-const jwk_to_pem_1 = require("jwk-to-pem");
 const jwksCache = new Map();
 let CognitoStrategy = class CognitoStrategy {
     options;
@@ -27,28 +27,33 @@ let CognitoStrategy = class CognitoStrategy {
     }
     canHandle(context) {
         const authHeader = context.headers?.authorization;
-        return typeof authHeader === "string" && authHeader.startsWith("Bearer ");
+        return (typeof authHeader === "string" &&
+            authHeader.startsWith("Bearer "));
     }
     async validate(context) {
-        const authHeader = context.headers.authorization;
-        if (!authHeader) {
-            throw new http_errors_1.UnauthorizedError("Missing Authorization header");
+        const authHeader = context.headers?.authorization;
+        if (!authHeader || !authHeader.startsWith("Bearer ")) {
+            throw new http_errors_1.UnauthorizedError("Invalid authorization header format");
         }
         const token = authHeader.split(" ")[1];
         if (!token) {
-            throw new http_errors_1.UnauthorizedError("Invalid Bearer token format");
+            throw new http_errors_1.UnauthorizedError("Token missing");
         }
-        const decoded = jsonwebtoken_1.default.decode(token, { complete: true });
-        if (!decoded) {
+        const decoded = jwt.decode(token, { complete: true });
+        if (!decoded || !decoded.header || !decoded.payload) {
             throw new http_errors_1.UnauthorizedError("Invalid JWT format");
         }
         const { header, payload } = decoded;
-        if (!payload?.iss?.includes("cognito-idp")) {
+        if (!header.kid) {
+            throw new http_errors_1.UnauthorizedError("Invalid JWT header");
+        }
+        if (!payload?.iss || !payload.iss.includes("cognito-idp")) {
             throw new http_errors_1.UnauthorizedError("Not a Cognito token");
         }
         const issuer = payload.iss;
         const [region, userPoolId] = this.parseRegionAndUserPoolId(issuer);
-        if (!this.options.allowedUserPoolIds.includes(userPoolId)) {
+        if (!this.options.allowedUserPoolIds ||
+            !this.options.allowedUserPoolIds.includes(userPoolId)) {
             throw new http_errors_1.UnauthorizedError("Invalid Cognito user pool");
         }
         const jwks = await this.getJwks(region, userPoolId);
@@ -58,8 +63,9 @@ let CognitoStrategy = class CognitoStrategy {
         }
         const pem = (0, jwk_to_pem_1.default)(jwk);
         try {
-            jsonwebtoken_1.default.verify(token, pem, {
+            jwt.verify(token, pem, {
                 algorithms: ["RS256"],
+                issuer,
             });
         }
         catch {
@@ -76,12 +82,12 @@ let CognitoStrategy = class CognitoStrategy {
         };
     }
     parseRegionAndUserPoolId(issuer) {
-        const regionMatch = issuer.match(/cognito-idp\.([^.]+)\.amazonaws\.com/);
-        if (!regionMatch) {
+        const match = issuer.match(/^https:\/\/cognito-idp\.([^.]+)\.amazonaws\.com\/(.+)$/);
+        if (!match) {
             throw new http_errors_1.UnauthorizedError("Invalid Cognito issuer");
         }
-        const region = regionMatch[1];
-        const userPoolId = issuer.split("/").pop();
+        const region = match[1];
+        const userPoolId = match[2];
         return [region, userPoolId];
     }
     async getJwks(region, userPoolId) {
@@ -89,11 +95,20 @@ let CognitoStrategy = class CognitoStrategy {
             return jwksCache.get(userPoolId);
         }
         const url = `https://cognito-idp.${region}.amazonaws.com/${userPoolId}/.well-known/jwks.json`;
-        const response = await fetch(url);
+        let response;
+        try {
+            response = await fetch(url);
+        }
+        catch {
+            throw new http_errors_1.UnauthorizedError("Failed to fetch Cognito keys");
+        }
         if (!response.ok) {
             throw new http_errors_1.UnauthorizedError("Failed to fetch Cognito keys");
         }
         const body = await response.json();
+        if (!body?.keys || !Array.isArray(body.keys)) {
+            throw new http_errors_1.UnauthorizedError("Invalid JWKS response");
+        }
         jwksCache.set(userPoolId, body.keys);
         return body.keys;
     }
