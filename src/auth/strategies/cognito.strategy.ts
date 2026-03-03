@@ -96,13 +96,24 @@ export class CognitoStrategy implements AuthStrategy {
 
         const pem = jwkToPem(jwk as any);
 
+        // try {
+        //     jwt.verify(token, pem, {
+        //         algorithms: ["RS256"],
+        //         issuer,
+        //     });
+        // } catch {
+        //     throw new UnauthorizedError("Invalid or expired token");
+        // }
+
         try {
             jwt.verify(token, pem, {
-                algorithms: ["RS256"],
-                issuer,
+                algorithms: [jwk.alg],
+                ignoreExpiration: true, //igual que antes
             });
-        } catch {
-            throw new UnauthorizedError("Invalid or expired token");
+        } catch (error: any) {
+            throw new UnauthorizedError(
+                error?.message || "Invalid or expired token"
+            );
         }
 
         return {

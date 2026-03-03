@@ -64,12 +64,12 @@ let CognitoStrategy = class CognitoStrategy {
         const pem = jwkToPem(jwk);
         try {
             jwt.verify(token, pem, {
-                algorithms: ["RS256"],
-                issuer,
+                algorithms: [jwk.alg],
+                ignoreExpiration: true,
             });
         }
-        catch {
-            throw new http_errors_1.UnauthorizedError("Invalid or expired token");
+        catch (error) {
+            throw new http_errors_1.UnauthorizedError(error?.message || "Invalid or expired token");
         }
         return {
             userId: payload.sub,
