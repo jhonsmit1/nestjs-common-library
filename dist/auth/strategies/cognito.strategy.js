@@ -18,27 +18,22 @@ const jwt = require("jsonwebtoken");
 const jwkToPem = require("jwk-to-pem");
 const http_errors_1 = require("../../exceptions/http/http.errors");
 const auth_tokens_1 = require("../tokens/auth.tokens");
-const jwksCache = new Map();
 let CognitoStrategy = class CognitoStrategy {
     options;
     name = "cognito";
+    jwksCache = new Map();
+    fetchLocks = new Map();
+    ttl;
     constructor(options) {
         this.options = options;
+        this.ttl = options.jwksCacheTtlMs ?? 10 * 60 * 1000;
     }
     canHandle(context) {
         const authHeader = context.headers?.authorization;
-        return (typeof authHeader === "string" &&
-            authHeader.startsWith("Bearer "));
+        return typeof authHeader === "string" && authHeader.startsWith("Bearer ");
     }
     async validate(context) {
-        const authHeader = context.headers?.authorization;
-        if (!authHeader || !authHeader.startsWith("Bearer ")) {
-            throw new http_errors_1.UnauthorizedError("Invalid authorization header format");
-        }
-        const token = authHeader.split(" ")[1];
-        if (!token) {
-            throw new http_errors_1.UnauthorizedError("Token missing");
-        }
+        const token = this.extractToken(context);
         const decoded = jwt.decode(token, { complete: true });
         if (!decoded || !decoded.header || !decoded.payload) {
             throw new http_errors_1.UnauthorizedError("Invalid JWT format");
@@ -47,29 +42,31 @@ let CognitoStrategy = class CognitoStrategy {
         if (!header.kid) {
             throw new http_errors_1.UnauthorizedError("Invalid JWT header");
         }
-        if (!payload?.iss || !payload.iss.includes("cognito-idp")) {
+        if (!payload.iss?.includes("cognito-idp")) {
             throw new http_errors_1.UnauthorizedError("Not a Cognito token");
         }
         const issuer = payload.iss;
-        const [region, userPoolId] = this.parseRegionAndUserPoolId(issuer);
-        if (!this.options.allowedUserPoolIds ||
-            !this.options.allowedUserPoolIds.includes(userPoolId)) {
-            throw new http_errors_1.UnauthorizedError("Invalid Cognito user pool");
-        }
-        const jwks = await this.getJwks(region, userPoolId);
-        const jwk = jwks.find((k) => k.kid === header.kid);
+        const [region, userPoolId] = this.parseIssuer(issuer);
+        this.ensureAllowedUserPool(userPoolId);
+        let jwks = await this.getJwks(region, userPoolId);
+        let jwk = jwks.find((k) => k.kid === header.kid);
         if (!jwk) {
-            throw new http_errors_1.UnauthorizedError("JWK not found");
+            this.jwksCache.delete(userPoolId);
+            jwks = await this.getJwks(region, userPoolId);
+            jwk = jwks.find((k) => k.kid === header.kid);
+            if (!jwk) {
+                throw new http_errors_1.UnauthorizedError("JWK not found");
+            }
         }
         const pem = jwkToPem(jwk);
         try {
             jwt.verify(token, pem, {
-                algorithms: [jwk.alg],
-                ignoreExpiration: true,
+                algorithms: ["RS256"],
+                issuer,
             });
         }
-        catch (error) {
-            throw new http_errors_1.UnauthorizedError(error?.message || "Invalid or expired token");
+        catch (err) {
+            throw new http_errors_1.UnauthorizedError(err?.message || "Invalid or expired token");
         }
         return {
             userId: payload.sub,
@@ -81,19 +78,53 @@ let CognitoStrategy = class CognitoStrategy {
             },
         };
     }
-    parseRegionAndUserPoolId(issuer) {
+    extractToken(context) {
+        const authHeader = context.headers?.authorization;
+        if (!authHeader?.startsWith("Bearer ")) {
+            throw new http_errors_1.UnauthorizedError("Invalid authorization header format");
+        }
+        const token = authHeader.split(" ")[1];
+        if (!token) {
+            throw new http_errors_1.UnauthorizedError("Token missing");
+        }
+        return token;
+    }
+    parseIssuer(issuer) {
         const match = issuer.match(/^https:\/\/cognito-idp\.([^.]+)\.amazonaws\.com\/(.+)$/);
         if (!match) {
             throw new http_errors_1.UnauthorizedError("Invalid Cognito issuer");
         }
-        const region = match[1];
-        const userPoolId = match[2];
-        return [region, userPoolId];
+        return [match[1], match[2]];
+    }
+    ensureAllowedUserPool(userPoolId) {
+        if (!this.options.allowedUserPoolIds ||
+            !this.options.allowedUserPoolIds.includes(userPoolId)) {
+            throw new http_errors_1.UnauthorizedError("Invalid Cognito user pool");
+        }
     }
     async getJwks(region, userPoolId) {
-        if (jwksCache.has(userPoolId)) {
-            return jwksCache.get(userPoolId);
+        const cached = this.jwksCache.get(userPoolId);
+        if (cached && cached.expiresAt > Date.now()) {
+            return cached.keys;
         }
+        if (this.fetchLocks.has(userPoolId)) {
+            return this.fetchLocks.get(userPoolId);
+        }
+        const fetchPromise = this.fetchJwks(region, userPoolId);
+        this.fetchLocks.set(userPoolId, fetchPromise);
+        try {
+            const keys = await fetchPromise;
+            this.jwksCache.set(userPoolId, {
+                keys,
+                expiresAt: Date.now() + this.ttl,
+            });
+            return keys;
+        }
+        finally {
+            this.fetchLocks.delete(userPoolId);
+        }
+    }
+    async fetchJwks(region, userPoolId) {
         const url = `https://cognito-idp.${region}.amazonaws.com/${userPoolId}/.well-known/jwks.json`;
         let response;
         try {
@@ -109,7 +140,6 @@ let CognitoStrategy = class CognitoStrategy {
         if (!body?.keys || !Array.isArray(body.keys)) {
             throw new http_errors_1.UnauthorizedError("Invalid JWKS response");
         }
-        jwksCache.set(userPoolId, body.keys);
         return body.keys;
     }
 };
