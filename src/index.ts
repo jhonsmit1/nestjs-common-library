@@ -12,6 +12,7 @@ export * from "./interceptors/response.interceptor";
 export * from "./exceptions/base/app.error";
 export * from "./exceptions/http/http.errors";
 export * from "./exceptions/filters/global-exception.filter";
+export * from "./exceptions/database/repository.helper";
 
 // 🧠 Request Context
 export * from "./context/request-context";
